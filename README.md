@@ -1,2 +1,35 @@
 # vstream-3xui
-自建真站 + 路径分流自动化的一键安装脚本
+
+一键部署 **Caddy 视频伪装真站 + WebSocket 路径分流 (`/stream/v1`) + 3x-ui 自动配置**脚本。支持多站点无损追加，不覆盖现有 Caddy 配置。
+
+## ⚠️ 运行前必看（划重点）
+
+1. **必须拥有自己的域名**（如 `xxx.xyz`）。
+2. **先新建并解析分流新域名**：在域名后台（如 Cloudflare）添加 **A 记录** 指向本机 IP（例如 `id.xxx.xyz`），**务必关闭小云朵（仅 DNS）**，否则无法自动申请 HTTPS 证书。
+
+## 🚀 一键运行
+
+域名解析生效后，以 `root` 权限执行：
+
+```bash
+bash <(curl -sL [https://raw.githubusercontent.com/yzhpxd/vstream-3xui/main/install.sh](https://raw.githubusercontent.com/yzhpxd/vstream-3xui/main/install.sh))
+
+
+
+运行交互说明
+脚本启动后会连续询问 3 个问题，填写完毕后即可全自动完成部署：
+
+输入分流新域名：填入你刚刚解析好的域名（例如 id.xxx.xyz）。
+
+输入 3x-ui 节点备注：直接回车默认使用你的域名作为备注。
+
+面板/旧节点处理：
+
+若未安装 3x-ui，默认回车 y 自动安装 v2.9.4；
+
+若已安装 3x-ui，输入 y 清空原有旧节点，直接回车 n 保留原有节点。
+
+✅ 部署后验证
+验证伪装真站：脚本运行完毕约 10 秒后，在浏览器访问 https://你的分流新域名，确认地址栏显示安全锁图标（HTTPS 生效），且页面能正常加载并播放视频。
+
+导入客户端使用：直接复制终端最后输出的绿色 vless://... 链接，导入到你的代理客户端即可直接连接使用。
