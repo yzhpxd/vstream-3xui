@@ -13,3 +13,4 @@
 
 ```bash
 bash <(curl -sL https://raw.githubusercontent.com/yzhpxd/vstream-3xui/main/install.sh)
+```
