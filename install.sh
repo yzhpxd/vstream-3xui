@@ -17,7 +17,7 @@ echo -e "${CYAN}  自建真站 (Caddy 无损追加) + 3x-ui 一键部署脚本  
 echo -e "${CYAN}=====================================================${NC}"
 
 # 2. 集中进行开头交互
-read -p "1. 请输入已解析到本机的分流新域名 (例如 id.666200.xyz): " DOMAIN </dev/tty
+read -p "1. 请输入已解析到本机的分流新域名 (例如 id.xxx.xyz): " DOMAIN </dev/tty
 if [ -z "$DOMAIN" ]; then
   echo -e "${RED}错误：域名不能为空！${NC}"
   exit 1
@@ -72,8 +72,13 @@ fi
 
 echo -e "\n${YELLOW}[3/6] 正在部署静态视频伪装站与测试视频...${NC}"
 mkdir -p /var/www/video/videos
-wget -qO /var/www/video/index.html https://www.666200.xyz/wp-content/uploads/2026/11/index.html
-wget -q -P /var/www/video/videos https://ora-us2-1.666200.xyz/videos/sample{1,2,3}.mp4
+wget -qO /var/www/video/index.html https://raw.githubusercontent.com/yzhpxd/vstream-3xui/main/index.html
+
+# 从 Archive.org 公共媒体库拉取 3 个全平台兼容的标准 H.264 MP4 视频
+wget -qO /var/www/video/videos/sample1.mp4 "https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4"
+wget -qO /var/www/video/videos/sample2.mp4 "https://archive.org/download/ElephantsDream/ed_hd_512kb.mp4"
+wget -qO /var/www/video/videos/sample3.mp4 "https://archive.org/download/Sintel/sintel-2048-surround_512kb.mp4"
+
 chmod -R 755 /var/www/video
 
 echo -e "\n${YELLOW}[4/6] 正在无损更新 Caddyfile 配置...${NC}"
@@ -86,13 +91,13 @@ if [ -f "$CADDY_FILE" ]; then
   
   # 检查是否已经配置过该域名，防止重复添加冲突
   if grep -q "${DOMAIN} {" "$CADDY_FILE"; then
-    echo -e "${YELLOW}检测到 Caddyfile 中已存在 ${DOMAIN} 的配置，为避免冲突，请先检查 ${CADDY_FILE}。${NC}"
+    echo -e "${YELLOW}检测到 Caddyfile 中已存在 ${DOMAIN} 的配置，为避免冲突，跳过追加。${NC}"
   else
     # 无损追加新域名块到原有配置末尾
     cat >> "$CADDY_FILE" << EOF
 
 ${DOMAIN} {
-    tls cn0514@gmail.com
+    tls cnuopp@gmail.com
     reverse_proxy /stream/v1* 127.0.0.1:10000
 
     root * /var/www/video
@@ -104,13 +109,13 @@ ${DOMAIN} {
     file_server
 }
 EOF
-    echo -e "${GREEN}已将 ${DOMAIN} 无损追加到原有 Caddyfile 末尾（vps 和 pic 站点不受影响）。${NC}"
+    echo -e "${GREEN}已将 ${DOMAIN} 无损追加到原有 Caddyfile 末尾（原有站点不受影响）。${NC}"
   fi
 else
   # 如果不存在 Caddyfile 则新建
   cat > "$CADDY_FILE" << EOF
 ${DOMAIN} {
-    tls cn0514@gmail.com
+    tls cnuopp@gmail.com
     reverse_proxy /stream/v1* 127.0.0.1:10000
 
     root * /var/www/video
@@ -140,6 +145,8 @@ fi
 echo -e "\n${YELLOW}[5/6] 正在向 3x-ui 数据库写入分流节点...${NC}"
 NODE_UUID=$(cat /proc/sys/kernel/random/uuid)
 SUB_ID=$(cat /proc/urandom | tr -dc 'a-z0-9' | fold -w 16 | head -n 1)
+# 转义单引号防止 SQL 注入或语法报错
+SAFE_REMARK=$(echo "$NODE_REMARK" | sed "s/'/''/g")
 
 DB_PATH="/etc/x-ui/x-ui.db"
 if [ ! -f "$DB_PATH" ]; then
@@ -157,11 +164,11 @@ if [ -n "$DB_PATH" ] && [ -f "$DB_PATH" ]; then
     sqlite3 "$DB_PATH" "DELETE FROM inbounds WHERE port = 10000;"
   fi
 
-  SETTINGS="{\"clients\":[{\"id\":\"${NODE_UUID}\",\"flow\":\"\",\"email\":\"${NODE_REMARK}\",\"limitIp\":0,\"totalGB\":0,\"expiryTime\":0,\"enable\":true,\"tgId\":\"\",\"subId\":\"${SUB_ID}\",\"reset\":0}],\"decryption\":\"none\",\"fallbacks\":[]}"
+  SETTINGS="{\"clients\":[{\"id\":\"${NODE_UUID}\",\"flow\":\"\",\"email\":\"${SAFE_REMARK}\",\"limitIp\":0,\"totalGB\":0,\"expiryTime\":0,\"enable\":true,\"tgId\":\"\",\"subId\":\"${SUB_ID}\",\"reset\":0}],\"decryption\":\"none\",\"fallbacks\":[]}"
   STREAM_SETTINGS="{\"network\":\"ws\",\"security\":\"none\",\"externalProxy\":[],\"wsSettings\":{\"acceptProxyProtocol\":false,\"path\":\"/stream/v1\",\"host\":\"\",\"headers\":{}}}"
   SNIFFING="{\"enabled\":true,\"destOverride\":[\"http\",\"tls\",\"quic\",\"fakedns\"],\"metadataOnly\":false,\"routeOnly\":false}"
 
-  sqlite3 "$DB_PATH" "INSERT INTO inbounds (user_id, up, down, total, remark, enable, expiry_time, listen, port, protocol, settings, stream_settings, tag, sniffing) VALUES (1, 0, 0, 0, '${NODE_REMARK}', 1, 0, '127.0.0.1', 10000, 'vless', '${SETTINGS}', '${STREAM_SETTINGS}', 'inbound-10000', '${SNIFFING}');"
+  sqlite3 "$DB_PATH" "INSERT INTO inbounds (user_id, up, down, total, remark, enable, expiry_time, listen, port, protocol, settings, stream_settings, tag, sniffing) VALUES (1, 0, 0, 0, '${SAFE_REMARK}', 1, 0, '127.0.0.1', 10000, 'vless', '${SETTINGS}', '${STREAM_SETTINGS}', 'inbound-10000', '${SNIFFING}');"
   
   systemctl restart x-ui
   echo -e "${GREEN}成功：已自动将新节点写入 3x-ui 并重启生效！${NC}"
