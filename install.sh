@@ -39,8 +39,9 @@ else
 fi
 
 echo -e "\n${YELLOW}[1/6] 正在检查并安装 Caddy、ffmpeg 与基础依赖...${NC}"
+export DEBIAN_FRONTEND=noninteractive
 apt update -y
-apt install -y debian-keyring debian-archive-keyring apt-transport-https curl ffmpeg wget sqlite3
+apt install -y debian-keyring debian-archive-keyring apt-transport-https curl gnupg ffmpeg wget sqlite3 python3
 
 if ! command -v caddy &> /dev/null; then
   curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg --yes
@@ -55,10 +56,10 @@ NEW_INSTALL_3XUI=false
 
 if [[ "$INSTALL_3XUI" =~ ^[Yy]$ ]]; then
   echo -e "${CYAN}正在自动安装 3x-ui v2.9.4...${NC}"
-  PANEL_USER=$(cat /proc/urandom | tr -dc 'a-z0-9' | fold -w 8 | head -n 1)
-  PANEL_PASS=$(cat /proc/urandom | tr -dc 'A-Za-z0-9' | fold -w 12 | head -n 1)
+  PANEL_USER=$(tr -dc 'a-z0-9' < /dev/urandom | fold -w 8 | head -n 1)
+  PANEL_PASS=$(tr -dc 'A-Za-z0-9' < /dev/urandom | fold -w 12 | head -n 1)
   PANEL_PORT=$((RANDOM % 10000 + 20000))
-  PANEL_PATH=$(cat /proc/urandom | tr -dc 'a-zA-Z0-9' | fold -w 12 | head -n 1)
+  PANEL_PATH=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 12 | head -n 1)
 
   printf "y\n%s\n%s\n%s\n%s\n" "$PANEL_USER" "$PANEL_PASS" "$PANEL_PORT" "$PANEL_PATH" | bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh) v2.9.4
   
@@ -86,14 +87,11 @@ CADDY_FILE="/etc/caddy/Caddyfile"
 mkdir -p /etc/caddy
 
 if [ -f "$CADDY_FILE" ]; then
-  # 备份原有配置
   cp "$CADDY_FILE" "${CADDY_FILE}.bak.$(date +%Y%m%d%H%M%S)"
   
-  # 检查是否已经配置过该域名，防止重复添加冲突
   if grep -q "${DOMAIN} {" "$CADDY_FILE"; then
     echo -e "${YELLOW}检测到 Caddyfile 中已存在 ${DOMAIN} 的配置，为避免冲突，跳过追加。${NC}"
   else
-    # 无损追加新域名块到原有配置末尾
     cat >> "$CADDY_FILE" << EOF
 
 ${DOMAIN} {
@@ -112,7 +110,6 @@ EOF
     echo -e "${GREEN}已将 ${DOMAIN} 无损追加到原有 Caddyfile 末尾（原有站点不受影响）。${NC}"
   fi
 else
-  # 如果不存在 Caddyfile 则新建
   cat > "$CADDY_FILE" << EOF
 ${DOMAIN} {
     tls cnuopp@gmail.com
@@ -129,7 +126,6 @@ ${DOMAIN} {
 EOF
 fi
 
-# 校验配置语法后再重载，防止配置出错影响已有网站
 caddy fmt --overwrite "$CADDY_FILE"
 if caddy validate --config "$CADDY_FILE" > /dev/null 2>&1; then
   systemctl enable --now caddy
@@ -144,8 +140,7 @@ fi
 
 echo -e "\n${YELLOW}[5/6] 正在向 3x-ui 数据库写入分流节点...${NC}"
 NODE_UUID=$(cat /proc/sys/kernel/random/uuid)
-SUB_ID=$(cat /proc/urandom | tr -dc 'a-z0-9' | fold -w 16 | head -n 1)
-# 转义单引号防止 SQL 注入或语法报错
+SUB_ID=$(tr -dc 'a-z0-9' < /dev/urandom | fold -w 16 | head -n 1)
 SAFE_REMARK=$(echo "$NODE_REMARK" | sed "s/'/''/g")
 
 DB_PATH="/etc/x-ui/x-ui.db"
