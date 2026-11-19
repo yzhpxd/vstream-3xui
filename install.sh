@@ -77,9 +77,9 @@ echo -e "\n${YELLOW}[3/6] 正在部署静态视频伪装站与测试视频...${N
 mkdir -p /var/www/video/videos
 wget -qO /var/www/video/index.html https://raw.githubusercontent.com/yzhpxd/vstream-3xui/main/index.html
 
-wget -q --connect-timeout=15 --tries=3 -O /var/www/video/videos/sample1.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
-wget -q --connect-timeout=15 --tries=3 -O /var/www/video/videos/sample2.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"
-wget -q --connect-timeout=15 --tries=3 -O /var/www/video/videos/sample3.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4"
+wget -O /var/www/video/videos/sample1.mp4 "https://github.com/intel-iot-devkit/sample-videos/raw/master/person-bicycle-car-detection.mp4" && \
+wget -O /var/www/video/videos/sample2.mp4 "https://github.com/bower-media-samples/big-buck-bunny-1080p-60fps-30s/raw/master/video.mp4" && \
+wget -O /var/www/video/videos/sample3.mp4 "https://github.com/bower-media-samples/big-buck-bunny-1080p-30s/raw/master/video.mp4" && \
 
 for i in 1 2 3; do
   if [ ! -s "/var/www/video/videos/sample${i}.mp4" ]; then
