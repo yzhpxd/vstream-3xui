@@ -6,7 +6,6 @@ YELLOW='\033[0;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# 1. 检查 root 权限
 if [ "$EUID" -ne 0 ]; then
   echo -e "${RED}错误：请使用 root 权限运行此脚本 (sudo bash $0)${NC}"
   exit 1
@@ -16,7 +15,6 @@ echo -e "${CYAN}=====================================================${NC}"
 echo -e "${CYAN}  自建真站 (Caddy 无损追加) + 3x-ui 一键部署脚本     ${NC}"
 echo -e "${CYAN}=====================================================${NC}"
 
-# 2. 集中进行开头交互
 read -p "1. 请输入已解析到本机的分流新域名 (例如 id.xxx.xyz): " DOMAIN </dev/tty
 if [ -z "$DOMAIN" ]; then
   echo -e "${RED}错误：域名不能为空！${NC}"
@@ -29,7 +27,6 @@ NODE_REMARK=${NODE_REMARK:-"$DOMAIN"}
 INSTALL_3XUI="n"
 DEL_OLD="n"
 
-# 3. 根据是否已安装 3x-ui，弹出对应的第 3 个问题
 if command -v x-ui &> /dev/null || [ -d "/usr/local/x-ui" ] || [ -f "/etc/x-ui/x-ui.db" ]; then
   read -p "3. 检测到已安装 3x-ui，是否删除原有的所有旧节点？(y/n) [默认: n]: " DEL_OLD </dev/tty
   DEL_OLD=${DEL_OLD:-"n"}
@@ -61,10 +58,15 @@ if [[ "$INSTALL_3XUI" =~ ^[Yy]$ ]]; then
   PANEL_PORT=$((RANDOM % 10000 + 20000))
   PANEL_PATH=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | fold -w 12 | head -n 1)
 
-  printf "y\n%s\n%s\n%s\n%s\n" "$PANEL_USER" "$PANEL_PASS" "$PANEL_PORT" "$PANEL_PATH" | bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh) v2.9.4
+  # 适配新版 3x-ui 交互顺序：1(SQLite) -> 4(跳过SSL)
+  printf "1\n4\n" | bash <(curl -Ls https://raw.githubusercontent.com/mhsanaei/3x-ui/master/install.sh) v2.9.4
+  sleep 2
+  # 直接通过官方 CLI 命令强制写入确定的账号、密码、端口与路径
+  /usr/local/x-ui/x-ui setting -username "$PANEL_USER" -password "$PANEL_PASS" -port "$PANEL_PORT" -webBasePath "$PANEL_PATH"
+  systemctl restart x-ui
   
   NEW_INSTALL_3XUI=true
-  sleep 3
+  sleep 2
 elif command -v x-ui &> /dev/null || [ -d "/usr/local/x-ui" ]; then
   echo -e "${GREEN}使用现有 3x-ui 面板。${NC}"
 else
@@ -74,12 +76,9 @@ fi
 echo -e "\n${YELLOW}[3/6] 正在部署静态视频伪装站与测试视频...${NC}"
 mkdir -p /var/www/video/videos
 wget -qO /var/www/video/index.html https://raw.githubusercontent.com/yzhpxd/vstream-3xui/main/index.html
-
-# 从 Archive.org 公共媒体库拉取 3 个全平台兼容的标准 H.264 MP4 视频
 wget -qO /var/www/video/videos/sample1.mp4 "https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4"
 wget -qO /var/www/video/videos/sample2.mp4 "https://archive.org/download/ElephantsDream/ed_hd_512kb.mp4"
 wget -qO /var/www/video/videos/sample3.mp4 "https://archive.org/download/Sintel/sintel-2048-surround_512kb.mp4"
-
 chmod -R 755 /var/www/video
 
 echo -e "\n${YELLOW}[4/6] 正在无损更新 Caddyfile 配置...${NC}"
