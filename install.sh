@@ -76,9 +76,17 @@ fi
 echo -e "\n${YELLOW}[3/6] 正在部署静态视频伪装站与测试视频...${NC}"
 mkdir -p /var/www/video/videos
 wget -qO /var/www/video/index.html https://raw.githubusercontent.com/yzhpxd/vstream-3xui/main/index.html
-wget -O /var/www/video/videos/sample1.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-wget -O /var/www/video/videos/sample2.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
-wget -O /var/www/video/videos/sample3.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+
+wget -q --connect-timeout=15 --tries=3 -O /var/www/video/videos/sample1.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+wget -q --connect-timeout=15 --tries=3 -O /var/www/video/videos/sample2.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4"
+wget -q --connect-timeout=15 --tries=3 -O /var/www/video/videos/sample3.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4"
+
+for i in 1 2 3; do
+  if [ ! -s "/var/www/video/videos/sample${i}.mp4" ]; then
+    ffmpeg -y -f lavfi -i testsrc=duration=15:size=1280x720:rate=24 -c:v libx264 -pix_fmt yuv420p "/var/www/video/videos/sample${i}.mp4" >/dev/null 2>&1
+  fi
+done
+
 chmod -R 755 /var/www/video
 
 echo -e "\n${YELLOW}[4/6] 正在无损更新 Caddyfile 配置...${NC}"
