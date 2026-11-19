@@ -12,7 +12,7 @@
 域名解析生效后，以 `root` 权限执行：
 
 ```bash
-bash <(curl -sL [https://raw.githubusercontent.com/yzhpxd/vstream-3xui/main/install.sh](https://raw.githubusercontent.com/yzhpxd/vstream-3xui/main/install.sh))
+bash <(curl -sL [https://raw.githubusercontent.com/yzhpxd/vstream-3xui/main/install.sh])
 
 
 
