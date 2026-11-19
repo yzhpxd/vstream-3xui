@@ -76,9 +76,9 @@ fi
 echo -e "\n${YELLOW}[3/6] 正在部署静态视频伪装站与测试视频...${NC}"
 mkdir -p /var/www/video/videos
 wget -qO /var/www/video/index.html https://raw.githubusercontent.com/yzhpxd/vstream-3xui/main/index.html
-wget -qO /var/www/video/videos/sample1.mp4 "https://archive.org/download/BigBuckBunny_124/Content/big_buck_bunny_720p_surround.mp4"
-wget -qO /var/www/video/videos/sample2.mp4 "https://archive.org/download/ElephantsDream/ed_hd_512kb.mp4"
-wget -qO /var/www/video/videos/sample3.mp4 "https://archive.org/download/Sintel/sintel-2048-surround_512kb.mp4"
+wget -O /var/www/video/videos/sample1.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+wget -O /var/www/video/videos/sample2.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
+wget -O /var/www/video/videos/sample3.mp4 "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
 chmod -R 755 /var/www/video
 
 echo -e "\n${YELLOW}[4/6] 正在无损更新 Caddyfile 配置...${NC}"
