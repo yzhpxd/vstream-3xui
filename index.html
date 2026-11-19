@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>个人影像资料库</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-hover: #334155;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 24px 16px;
+    }
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    header h1 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    header span {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 24px;
+    }
+    @media (max-width: 860px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+    .player-card {
+      background: var(--card);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+    }
+    .video-meta {
+      padding: 18px 20px;
+    }
+    .video-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .video-desc {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .playlist-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .playlist-header {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--muted);
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+    }
+    .playlist-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .playlist-item:hover {
+      background: var(--card-hover);
+    }
+    .playlist-item.active {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.12);
+    }
+    .item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding-right: 10px;
+      overflow: hidden;
+    }
+    .item-title {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .playlist-item.active .item-title {
+      color: var(--accent);
+    }
+    .item-sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .badge {
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--bg);
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .playlist-item.active .badge {
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 600;
+    }
+    footer {
+      margin-top: 32px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>个人摄影与影像归档</h1>
+      <span>HTML5 原生流媒体演示站</span>
+    </header>
+
+    <div class="main-grid">
+      <div class="player-card">
+        <div class="video-wrap">
+          <video id="player" controls preload="metadata" playsinline></video>
+        </div>
+        <div class="video-meta">
+          <div class="video-title" id="current-title">正在扫描视频目录...</div>
+          <div class="video-desc" id="current-desc"></div>
+        </div>
+      </div>
+
+      <aside class="playlist-card">
+        <div class="playlist-header">
+          <span>播放列表</span>
+          <span id="video-count">0 个视频</span>
+        </div>
+        <div id="playlist"></div>
+      </aside>
+    </div>
+
+    <footer>
+      <p>© 2026 Personal Media Archive. All rights reserved.</p>
+    </footer>
+  </div>
+
+  <script>
+    const VIDEO_DIR = "/videos/"; // 对应服务器 /var/www/video/videos/
+    const VIDEO_EXTS = /\.(mp4|webm|mkv|mov|m4v)$/i; // 支持的视频格式
+
+    const player = document.getElementById("player");
+    const titleEl = document.getElementById("current-title");
+    const descEl = document.getElementById("current-desc");
+    const playlistEl = document.getElementById("playlist");
+    const countEl = document.getElementById("video-count");
+
+    let videos = [];
+    let currentIndex = 0;
+
+    // 数字转中文（输出：影片一、影片二...影片十一...）
+    function numberToChinese(num) {
+      const digits = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
+      if (num <= 10) return num === 10 ? "十" : digits[num];
+      if (num < 20) return "十" + digits[num % 10];
+      if (num < 100) {
+        const tens = Math.floor(num / 10);
+        const ones = num % 10;
+        return digits[tens] + "十" + (ones === 0 ? "" : digits[ones]);
+      }
+      return String(num);
+    }
+
+    // 自动扫描 Caddy 开启 browse 后的目录页
+    async function fetchVideoList() {
+      try {
+        const res = await fetch(VIDEO_DIR);
+        if (!res.ok) throw new Error("目录访问失败，HTTP 状态码：" + res.status);
+
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const links = Array.from(doc.querySelectorAll("a"));
+
+        let fileNames = links
+          .map(a => decodeURIComponent(a.getAttribute("href") || ""))
+          .filter(href => VIDEO_EXTS.test(href) && !href.startsWith("?"))
+          .map(href => href.split("/").pop());
+
+        // 去重并按文件名排序
+        fileNames = [...new Set(fileNames)].sort();
+
+        if (fileNames.length === 0) {
+          titleEl.textContent = "目录中未找到视频文件";
+          descEl.textContent = "请确认 /var/www/video/videos/ 下存在视频，且 Caddy 已开启 file_server browse。";
+          return;
+        }
+
+        // 生成“影片一、影片二...”列表
+        videos = fileNames.map((name, idx) => {
+          const ext = name.split(".").pop().toUpperCase();
+          return {
+            title: `影片${numberToChinese(idx + 1)}`,
+            fileName: name,
+            src: VIDEO_DIR + encodeURIComponent(name),
+            format: ext
+          };
+        });
+
+        loadVideo(0, false);
+      } catch (err) {
+        titleEl.textContent = "无法读取视频列表";
+        descEl.textContent = err.message;
+      }
+    }
+
+    function loadVideo(index, autoPlay = false) {
+      currentIndex = index;
+      const item = videos[index];
+      player.src = item.src;
+      titleEl.textContent = item.title;
+      descEl.textContent = `当前文件：${item.fileName}`;
+      renderPlaylist();
+      if (autoPlay) {
+        player.play().catch(() => {});
+      }
+    }
+
+    function renderPlaylist() {
+      countEl.textContent = `${videos.length} 个视频`;
+      playlistEl.innerHTML = "";
+      videos.forEach((v, idx) => {
+        const div = document.createElement("div");
+        div.className = "playlist-item" + (idx === currentIndex ? " active" : "");
+        div.innerHTML = `
+          <div class="item-info">
+            <div class="item-title">${v.title}</div>
+            <div class="item-sub">${v.fileName}</div>
+          </div>
+          <span class="badge">${idx === currentIndex ? "播放中" : v.format}</span>
+        `;
+        div.onclick = () => loadVideo(idx, true);
+        playlistEl.appendChild(div);
+      });
+    }
+
+    // 播放完毕自动切下一个
+    player.addEventListener("ended", () => {
+      if (videos.length === 0) return;
+      const next = (currentIndex + 1) % videos.length;
+      loadVideo(next, true);
+    });
+
+    // 初始化加载
+    fetchVideoList();
+  </script>
+</body>
+</html>
