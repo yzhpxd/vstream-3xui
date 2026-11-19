@@ -12,24 +12,4 @@
 域名解析生效后，以 `root` 权限执行：
 
 ```bash
-bash <(curl -sL [https://raw.githubusercontent.com/yzhpxd/vstream-3xui/main/install.sh])
-
-
-
-运行交互说明
-脚本启动后会连续询问 3 个问题，填写完毕后即可全自动完成部署：
-
-输入分流新域名：填入你刚刚解析好的域名（例如 id.xxx.xyz）。
-
-输入 3x-ui 节点备注：直接回车默认使用你的域名作为备注。
-
-面板/旧节点处理：
-
-若未安装 3x-ui，默认回车 y 自动安装 v2.9.4；
-
-若已安装 3x-ui，输入 y 清空原有旧节点，直接回车 n 保留原有节点。
-
-✅ 部署后验证
-验证伪装真站：脚本运行完毕约 10 秒后，在浏览器访问 https://你的分流新域名，确认地址栏显示安全锁图标（HTTPS 生效），且页面能正常加载并播放视频。
-
-导入客户端使用：直接复制终端最后输出的绿色 vless://... 链接，导入到你的代理客户端即可直接连接使用。
+bash <(curl -sL [https://raw.githubusercontent.com/yzhpxd/vstream-3xui/main/install.sh](https://raw.githubusercontent.com/yzhpxd/vstream-3xui/main/install.sh))
